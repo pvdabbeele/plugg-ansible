@@ -1,7 +1,7 @@
 server {
   index {{ nginx.index | default('index.html', true) }};
-  listen {{ nginx.port | default('88', true) }} default_server;
-  listen [::]:{{ nginx.port | default('88', true) }} default_server;
+  listen {{ nginx.port | default('8080', true) }} default_server;
+  listen [::]:{{ nginx.port | default('8080', true) }} default_server;
   location / {
     try_files $uri $uri/ /index.html;
   }
