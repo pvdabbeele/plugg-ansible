@@ -1,1 +1,81 @@
+### postgresql/tasks/main.yml
+---
+- name: set the correct pSQL working environment
+  include_vars: "defaults/{{ env | default(main) }}.yml"
 
+- name: check if a pSQL version exists
+  ansible.builtin.stat:
+    path: "{{ postgresql.data_dir }}/PG_VERSION"
+  register: pgsql_version
+
+- name: install and configure pSQL
+  block:
+    - name: install pSQL packages
+      ansible.builtin.dnf:
+        name: "{{ item.package }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ postgresql.packages }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: create the pSQL data folder
+      ansible.builtin.file:
+        path: "{{ postgresql.data_dir }}"
+        owner: "{{ postgresql.owner }}"
+        group: "{{ postgresql.group }}"
+        state: directory
+        mode: 0700
+    
+    - name: set the system password for the pSQL admin
+      ansible.builtin.user:
+        name: "{{ postgresql.owner }}"
+        password: "{{ database_password[0] | password_hash('md5') }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: initialise the pSQL database
+      ansible.builtin.command: /usr/bin/initdb -D "{{ postgresql.data_dir }}"
+      become: true
+      become_user: "{{ postgresql.owner }}"
+      # See: https://github.com/ansible/ansible/issues/16048#issuecomment-229012509
+      vars:
+        ansible_ssh_pipelining: true
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: adapt the default pSQL port
+      replace:
+        path: "{{ postgresql.data_dir }}/postgresql.conf"
+        regexp: "^#port =.+$"
+        replace: "port = '{{ postgresql.port }}'"
+        backup: yes
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: adapt the pSQL listen addresses
+      replace:
+        path: "{{ postgresql.data_dir }}/postgresql.conf"
+        regexp: "#listen_addresses = 'localhost'"
+        replace: "listen_addresses = '*'"
+        backup: yes
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: set pSQL account environment variables
+      ansible.builtin.template:
+        src: postgres.sh.j2
+        dest: /etc/profile.d/postgres.sh
+        mode: 0644
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: ensure and restart the PostgreSQL service
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: yes
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+  when: not pgsql_version.stat.exists
