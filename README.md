@@ -19,6 +19,12 @@ my_app.local
 [databases]
 my_db.local
 ```
+### two-tier
+Above notation gives you the ability to tell Ansible: use the *"other tier"*:
+```yml
+{{ hostvars[groups['applications'][0]]['inventory_hostname'] }}
+```
+
 ## content
 - pluggable roles that can perform a **default** installation of aforementioned components
 - a customization role that performs a **specific** installation and/or configuration
