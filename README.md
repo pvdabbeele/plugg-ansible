@@ -8,11 +8,11 @@ An Ansible repo with pluggable roles, such as:
 - webservers: Apache2 (httpd), Nginx
 
 ## prerequisites
-- RHEL 8
-- Ansible 2.12 or higher
+- RHEL (preferably 8)
+- Ansible (preferably 2.12 or higher)
 - an Ansible service account with authorized ssh login
-- Vaultwarden 2023 or equivalent (with: community.general.bitwarden installed)
-- an inventory
+- Vaultwarden with *community.general.bitwarden* installed
+- an inventory, something like this would be lovely:
 ```yml
 [applications]
 my_app.local
