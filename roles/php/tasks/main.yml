@@ -1,1 +1,69 @@
+### php/tasks/main.yml
+---
+- name: set the correct PHP variables
+  include_vars: "defaults/{{ env | default(main) }}.yml"
 
+- name: check if PHP is installed
+  command: which php
+  changed_when: false
+  failed_when: false
+  register: php_installed
+
+- name: install and configure PHP
+  block:
+    - name: install PHP packages
+      ansible.builtin.dnf:
+        name: "{{ item.package }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ php.packages }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: create the PHP config folder
+      ansible.builtin.file:
+        path: "{{ php.config }}"
+        state: directory
+        mode: 0755
+
+  when: php_installed.rc != 0
+
+- name: configure PHP global settings
+  template:
+    src: www.conf.j2
+    dest: "{{ php.config }}/www.conf"
+    owner: "{{ php.owner }}"
+    group: "{{ php.group }}"
+    mode: 0644
+
+- name: edit PHP INI memory setting
+  replace:
+    dest: /etc/php.ini
+    regexp: '^memory_limit.*$'
+    replace: 'memory_limit = {{ ansible_memtotal_mb }}'
+    backup: yes
+
+- name: first populate service facts
+  ansible.builtin.service_facts:
+
+- name: restart webserver(s) when present
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - httpd
+    - php-fpm
+  when: (not ansible_check_mode) and ('httpd.service' in services)
+  ignore_errors: '{{ ansible_check_mode }}'
+
+- name: restart webserver(s) when present
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - nginx
+    - php-fpm
+  when: (not ansible_check_mode) and ('nginx.service' in services)
+  ignore_errors: '{{ ansible_check_mode }}'
