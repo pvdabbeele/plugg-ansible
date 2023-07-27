@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Jboss Application Server
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/systemd/system/jboss_params
+ExecStart=/opt/jboss/{{ jboss.version }}/bin/standalone.sh
+Group=jboss
+TimeoutStartSec=120
+TimeoutStopSec=600
+Type=simple
+User=jboss
+
+[Install]
+WantedBy=multi-user.target
