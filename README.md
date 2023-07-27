@@ -4,7 +4,7 @@
 
 An Ansible repo with pluggable roles, such as:
 - databases: MySQL/MariaDB, PostgreSQL
-- scripting: PHP, Ruby
+- scripting: PHP
 - webservers: Apache2 (httpd), Nginx
 
 ## prerequisites
@@ -71,7 +71,7 @@ values between square brackets are optional **[ ]** or an array of options **[ x
 
 ```yml
 ansible-playbook [ -l <hosts> | -i <inventory> ] [ --become ] [ --check ] -e "env=<environment> [ database_type= mariadb | postgresql ] 
-     [ webserver_type= httpd | nginx ] [ scripting_language= php | ruby ]" site.yml
+     [ webserver_type= httpd | nginx ] [ scripting_language=php ]" site.yml
 ```
 
 ## license
