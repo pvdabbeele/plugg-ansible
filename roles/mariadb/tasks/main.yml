@@ -1,1 +1,79 @@
+### mariadb/tasks/main.yml
+---
+- name: set the correct MySQL working environment
+  include_vars: "defaults/{{ env | default(main) }}.yml"
 
+- name: check if a MySQL version exists
+  ansible.builtin.stat:
+    path: /usr/bin/mysqld_safe
+  register: mysql_version
+
+- name: install and configure MySQL
+  block:
+    - name: install MySQL packages
+      ansible.builtin.dnf:
+        name: "{{ item.package }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ mariadb.packages }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: create the MySQL data folder
+      ansible.builtin.file:
+        path: "{{ mariadb.data_dir }}"
+        owner: "{{ mariadb.owner }}"
+        group: "{{ mariadb.group }}"
+        state: directory
+        mode: 0755
+        setype: mysqld_db_t
+
+    - name: configure MySQL global settings
+      ansible.builtin.template:
+        src: my.cnf.j2
+        dest: /etc/my.cnf
+        owner: "{{ mariadb.owner }}"
+        group: "{{ mariadb.group }}"
+        mode: 0644
+        force: true
+
+    - name: create the MySQL log folder
+      ansible.builtin.file:
+        path: "{{ mariadb.log_dir }}"
+        owner: "{{ mariadb.owner }}"
+        group: "{{ mariadb.group }}"
+        state: directory
+        mode: 0755
+
+    - name: create necessary log files
+      ansible.builtin.file:
+        path: "{{ mariadb.log_dir}}/{{ item }}"
+        state: touch
+        owner: "{{ mariadb.owner }}"
+        group: "{{ mariadb.owner }}"
+        mode: 0640
+      with_items: "{{ mariadb.logs }}"
+
+    - name: start MySQL
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: yes
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: secure by removing remote 'root' login first
+      ansible.builtin.command: 'mysql -NBe "{{ item }}"'
+      with_items:
+        - delete from mysql.user where user='root' and host!='localhost'
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: secure by updating the MySQL password for 'root'
+      community.mysql.mysql_user:
+        user: root
+        password: "{{ database_password[0] }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+  when: not mysql_version.stat.exists
