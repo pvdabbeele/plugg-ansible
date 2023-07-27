@@ -39,7 +39,7 @@ log_bin = {{ mariadb.log_dir | default('/var/log/mariadb', true) }}/mariadb_bin
 port = {{ mariadb.port | default('3306', true) }}
 ```
 
-### defaults/main.yml
+### defaults/main.yml (excerpt)
 
 ```yml
 mariadb:
