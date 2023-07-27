@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+AddDefaultCharset UTF-8
+DocumentRoot {{ httpd.documentroot | default('/etc/httpd', true) }}
+IncludeOptional conf.modules.d/*.conf
+IncludeOptional conf.d/*.conf
+Listen {{ httpd.port | default('80', true) }}
+Group {{ httpd.group | default('apache', true) }}
+ServerRoot {{ httpd.serverroot | default('/var/www/html', true) }}
+ServerSignature Off
+ServerTokens Prod
+User {{ httpd.owner | default('apache', true) }}
+<IfModule log_config_module>
+  LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+  LogFormat "%h %l %u %t \"%r\" %>s %b" common
+  CustomLog logs/access_log combined
+  ErrorLog logs/error_log
+  LogLevel warn
+</IfModule>
