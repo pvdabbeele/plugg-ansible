@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+<IfModule mod_userdir.c>
+# UserDir is disabled by default since it can spill the beans on usernames
+# if you remove this file, it will be recreated on upgrade
+  UserDir disabled
+</IfModule>
