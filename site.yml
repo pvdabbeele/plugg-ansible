@@ -1,0 +1,36 @@
+---
+- name: the Play
+  become: true
+  gather_facts: true
+  hosts: all
+  tasks:
+    - set_fact:                                                   # I know: { moustaches } don't stack
+        database_password: "{{ lookup('community.general.bitwarden', '{{ database_type }}_administrator', field='password') }}"
+      no_log: '{{ visible_logging_off }}'
+      when: (database_type is defined) and (database_type in database_types) and (database_password is not defined)
+
+    - name: include database role(s) if desired
+      ansible.builtin.include_role:
+        name: "{{ database_type }}"
+      when: (database_type is defined) and (database_type in database_types)
+
+    - name: include scripting role(s) if required
+      ansible.builtin.include_role:
+        name: "{{ scripting_language }}"
+      when: (scripting_language is defined) and (scripting_language in scripting_languages)
+
+    - name: include webserver role(s) if wanted
+      ansible.builtin.include_role:
+        name: "{{ webserver_type }}"
+      when: (webserver_type is defined) and (webserver_type in webserver_types)
+
+    - name: always include customization role(s)
+      ansible.builtin.include_role:
+        name: custom
+  vars:
+    database_types: [mariadb, postgresql]
+    scripting_languages: [php]
+    visible_logging_off: false
+    webserver_types: [httpd, nginx]
+  vars_files:
+    - "./defaults/{{ env | default(main) }}.yml"
