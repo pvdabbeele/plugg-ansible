@@ -15,6 +15,14 @@ httpd:
   serverroot: /etc/httpd
   users:
     - { user: 'apache', group: 'apache', shell: '/bin/bash' }
+jboss:
+  group: jboss
+  packages:
+    - { package: 'java-11-openjdk', state: 'present' }
+    - { package: 'unzip', state: 'latest' }
+  repo_url: https://github.com/wildfly/wildfly/releases/download/29.0.0.Final/wildfly-29.0.0.Final.zip
+  owner: jboss
+  version: wildfly-29.0.0.Final
 mariadb:
   config_file: /etc/my.cnf
   data_dir: /var/lib/mysql/
