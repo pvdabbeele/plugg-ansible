@@ -82,7 +82,7 @@ postgresql:
     - { package: 'postgresql-server', state: 'present' }
     - { package: 'postgresql-contrib', state: 'present' }
     - { package: 'python3-psycopg2', state: 'present' }
-  port: 2001
+  port: 5432
   users:
     - { user: 'admin', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', privs: 'ALL', type: 'database', objs: '' }
     - { user: 'readonly', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', privs: 'SELECT', type: 'default_privs', objs: 'TABLES' }
