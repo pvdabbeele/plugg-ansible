@@ -1,0 +1,18 @@
+; {{ ansible_managed }}
+[www]
+user = {{ php.user | default('nginx', true) }}
+group = {{ php.group | default('nginx', true) }}
+listen = {{ php.socket | default('/run/php-fpm/www.sock', true) }}
+listen.acl_users = apache,nginx
+listen.allowed_clients = {{ php.allowed_clients | default('127.0.0.1', true) }}
+pm = {{ php.processmanager | default('dynamic', true) }}
+pm.max_children = {{ php.max_children | default('50', true) }}
+pm.start_servers = {{ php.start_servers | default('5', true) }}
+pm.min_spare_servers = {{ php.min_spare_servers | default('5', true) }}
+pm.max_spare_servers = {{ php.max_spare_servers | default('35', true) }}
+slowlog = {{ php.log_dir | default('/var/log/php-fpm', true) }}/www-slow.log
+php_admin_value[error_log] = {{ php.log_dir | default('/var/log/php-fpm', true) }}/www-error.log
+php_admin_flag[log_errors] = {{ php.admin_flag | default('on', true) }}
+php_value[session.save_handler] = files
+php_value[session.save_path]    = /var/lib/php/session
+php_value[soap.wsdl_cache_dir]  = /var/lib/php/wsdlcache
