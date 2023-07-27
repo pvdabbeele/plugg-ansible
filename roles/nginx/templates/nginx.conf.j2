@@ -1,0 +1,27 @@
+# {{ ansible_managed }}
+error_log {{ nginx.error_log | default('/var/log/nginx/error.log warn', true) }};
+events {
+  multi_accept {{ nginx.connections_multi_accept | default('off', true) }};
+  worker_connections {{ nginx.connections_workers | default('1024', true) }};
+}
+http {
+  log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+    '$status $body_bytes_sent "$http_referer" '
+    '"$http_user_agent" "$http_x_forwarded_for"';
+  access_log {{ nginx.access_log | default('/var/log/nginx/access.log main buffer=16k flush=2m', true) }};
+  client_body_buffer_size {{ nginx.client_max_body_size | default('1k', true) }};
+  client_header_buffer_size {{ nginx.client_max_header_size | default('1k', true) }};
+  client_max_body_size {{ nginx.client_max_body_size | default('64m', true) }};
+  include {{ nginx.mime | default('/etc/nginx/mime.types', true) }};
+  include {{ nginx.conf_path | default('/etc/nginx/conf.d', true) }}/*.conf;
+  default_type application/octet-stream;
+  keepalive_timeout {{ nginx.keepalive_timeout | default('75', true) }};
+  keepalive_requests {{ nginx.keepalive_requests | default('600', true) }};
+  sendfile {{ nginx.sendfile | default('on', true) }};
+  server_names_hash_bucket_size {{ nginx.bucket_size | default('64', true) }};
+  server_tokens {{ nginx.server_tokens | default('off', true) }};
+  tcp_nopush {{ nginx.tcp_nopush | default('on', true) }};
+  tcp_nodelay {{ nginx.tcp_nodelay | default('on', true) }};
+}
+user {{ nginx.owner | default('nginx', true) }};
+worker_processes {{ ansible_facts.processor_vcpus }};
