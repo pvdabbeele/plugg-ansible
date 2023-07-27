@@ -1,1 +1,89 @@
+---
+httpd:
+  documentroot: "{{ documentroot | default('/var/www/html', true) }}"
+  group: apache
+  listen: "*"
+  owner: apache
+  packages:
+#   - { package: 'bsdtar', state: 'latest' }        # alternative untar with 'strip-components'
+#   - { package: 'dirmngr', state: 'present' }      # uncomment this for PKI support
+#   - { package: 'gnupg2', state: 'present' }       # uncomment this for PKI support
+    - { package: 'httpd', state: 'present' }
+    - { package: 'httpd-devel', state: 'present' }
+  port: 80
+  scriptalias: /var/www/cgi-bin
+  serverroot: /etc/httpd
+  users:
+    - { user: 'apache', group: 'apache', shell: '/bin/bash' }
+mariadb:
+  config_file: /etc/my.cnf
+  data_dir: /var/lib/mysql/
+  database: TEST
+  dump: TEST.sql
+  group: mysql
+  log_dir: /var/log/mariadb/
+  logs:
+    - mariadb.log
+    - mariadb_error.log
+  owner: mysql
+  packages:
+    - { package: 'mariadb-server', state: 'present' }
+    - { package: 'mariadb-connector-c', state: 'present' }
+    - { package: 'python3-PyMySQL', state: 'present' }
+    - { package: 'perl-DBD-MySQL', state: 'present' }
+  port: 3306
+  users:
+    - { user: 'admin', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', rights: '*.*:ALL'}
+    - { user: 'readonly', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', rights: '*.*:SELECT'}
+nginx:
+  documentroot: "{{ documentroot | default('/var/www/html', true) }}"
+  group: nginx
+  owner: nginx
+  packages:
+#   - { package: 'bsdtar', state: 'latest' }        # alternative untar with 'strip-components'
+#   - { package: 'dirmngr', state: 'present' }      # uncomment this for PKI support
+#   - { package: 'gnupg2', state: 'present' }       # uncomment this for PKI support
+    - { package: 'nginx', state: 'present' }
+  port: 8080
+php:
+  config: /etc/php-fpm.d/
+  group: "{{ httpd.group if nginx.group is none else 'nginx' }}"
+  log_dir: /var/log/php-fpm/
+  owner: "{{ httpd.owner if nginx.owner is none else 'nginx' }}"
+  packages:
+    - { package: 'mod_fcgid', state: 'present' }
+    - { package: 'php-cli', state: 'present' }
+    - { package: 'php-common', state: 'present' }
+    - { package: 'php-fpm', state: 'present' }
+    - { package: 'php-gd', state: 'present' }
+    - { package: 'php-gmp', state: 'present' }
+    - { package: 'php-json', state: 'present' }
+    - { package: 'php-ldap', state: 'present' }
+    - { package: 'php-mbstring', state: 'present' }
+    - { package: 'php-mysqlnd', state: 'present' }
+    - { package: 'php-pdo', state: 'present' }
+    - { package: 'php-pear', state: 'present' }
+    - { package: 'php-pgsql', state: 'present' }
+    - { package: 'php-xml', state: 'present' }
+  socket: /run/php-fpm/www.sock
+postgresql:
+  authentication: &psql_authentication md5
+  data_dir: /var/lib/pgsql/data/
+  database: TEST
+  dump: TEST.sql
+  group: postgres
+  hba:
+  - { type: local, database: all, user: all, auth_method: peer }
+  - { type: host, database: all, user: all, address: "127.0.0.1/32", auth_method: *psql_authentication }
+  - { type: host, database: all, user: all, address: "::1/128", auth_method: *psql_authentication }
+  owner: postgres
+  packages:
+    - { package: '@postgresql:13', state: 'present' }
+    - { package: 'postgresql-server', state: 'present' }
+    - { package: 'postgresql-contrib', state: 'present' }
+    - { package: 'python3-psycopg2', state: 'present' }
+  port: 2001
+  users:
+    - { user: 'admin', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', privs: 'ALL', type: 'database', objs: '' }
+    - { user: 'readonly', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', privs: 'SELECT', type: 'default_privs', objs: 'TABLES' }
 
