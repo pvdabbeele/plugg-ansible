@@ -1,1 +1,62 @@
+### nginx/tasks/main.yml
+---
+- name: set the correct Nginx working environment
+  include_vars: "defaults/{{ env | default(main) }}.yml"
 
+- name: check if a Nginx version exists
+  ansible.builtin.stat:
+    path: /usr/share/nginx
+  register: nginx_version
+
+- name: install and configure a new Nginx
+  block:
+    - name: install Nginx packages
+      ansible.builtin.dnf:
+        name: "{{ item.package }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ nginx.packages }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: create the Nginx data folders
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: "{{ nginx.owner }}"
+        group: "{{ nginx.group }}"
+        state: directory
+        mode: 0755
+      with_items:
+        - "{{ nginx.documentroot }}"
+        - "{{ nginx.documentroot }}/html"
+
+    - name: copy the Nginx systemd service file
+      ansible.builtin.copy:
+        src: nginx.service
+        dest: /etc/systemd/system/nginx.service
+        owner: "{{ nginx.owner }}"
+        group: users
+        mode: 0644
+
+  when: not nginx_version.stat.exists
+
+- name: configure Nginx global settings
+  template:
+    src: "{{ item }}"
+    dest: "/etc/nginx/{{ item | regex_replace('.j2', '') }}"
+    owner: "{{ nginx.owner }}"
+    group: "{{ nginx.group }}"
+    mode: 0644
+  with_items:
+    - default.d/php.conf.j2
+    - conf.d/php-fpm.conf.j2
+    - conf.d/custom.conf.j2
+    - nginx.conf.j2
+
+- name: ensure and restart the Nginx service
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: yes
+  when: not ansible_check_mode
+  ignore_errors: '{{ ansible_check_mode }}'
