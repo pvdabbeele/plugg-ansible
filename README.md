@@ -3,8 +3,9 @@
 ## purpose
 
 An Ansible repo with pluggable roles, such as:
+- application servers: Jboss/Wildfly
 - databases: MySQL/MariaDB, PostgreSQL
-- scripting: PHP
+- scripting languages: PHP
 - webservers: Apache2 (httpd), Nginx
 
 ## prerequisites
@@ -83,7 +84,7 @@ values between square brackets are optional **[ ]** or an array of options **[ x
 
 ```yml
 ansible-playbook [ -l <hosts> | -i <inventory> ] [ --become ] [ --check ] -e "env=<environment> [ database_type= mariadb | postgresql ] 
-     [ webserver_type= httpd | nginx ] [ scripting_language=php ]" site.yml
+     [ webserver_type= httpd | nginx ] [ scripting_language=php ]" [ application_server_type=jboss ] site.yml
 ```
 
 ## license
