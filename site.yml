@@ -1,8 +1,8 @@
 ---
-- name: the Play
+- name: the play for databases
   become: true
   gather_facts: true
-  hosts: all
+  hosts: databases
   tasks:
     - set_fact:                                                   # I know: { moustaches } don't stack
         database_password: "{{ lookup('community.general.bitwarden', '{{ database_type }}_administrator', field='password') }}"
@@ -14,23 +14,53 @@
         name: "{{ database_type }}"
       when: (database_type is defined) and (database_type in database_types)
 
-    - name: include scripting role(s) if required
-      ansible.builtin.include_role:
-        name: "{{ scripting_language }}"
-      when: (scripting_language is defined) and (scripting_language in scripting_languages)
+    - name: debug DB only when running with -v option
+      debug:
+        msg: "Installing {{ database_type | upper }} with database password = {{ database_password[0] }}"
+        verbosity: 1
+      when: (ansible_check_mode) and (database_type is defined)
+      ignore_errors: '{{ ansible_check_mode }}'
+  vars:
+    database_types: [mariadb, postgresql]
+    visible_logging_off: true
+  vars_files:
+    - "./defaults/{{ env | default(main) }}.yml"
 
+- name: the play for applications
+  become: true
+  gather_facts: true
+  hosts: applications
+  tasks:
     - name: include webserver role(s) if wanted
       ansible.builtin.include_role:
         name: "{{ webserver_type }}"
       when: (webserver_type is defined) and (webserver_type in webserver_types)
 
+    - name: debug WEB only when running with -v option
+      debug:
+        msg: "Installing {{ webserver_type | upper }}"
+        verbosity: 1
+      when: (ansible_check_mode) and (webserver_type is defined)
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: include scripting role(s) if required
+      ansible.builtin.include_role:
+        name: "{{ scripting_language }}"
+      when: (scripting_language is defined) and (scripting_language in scripting_languages)
+  vars:
+    scripting_languages: [php]
+    visible_logging_off: true
+    webserver_types: [httpd, nginx]
+  vars_files:
+    - "./defaults/{{ env | default(main) }}.yml"
+
+- name: subset for customization
+  become: true
+  gather_facts: true
+  hosts: all
+  tasks:
     - name: always include customization role(s)
       ansible.builtin.include_role:
         name: custom
-  vars:
-    database_types: [mariadb, postgresql]
-    scripting_languages: [php]
-    visible_logging_off: false
-    webserver_types: [httpd, nginx]
   vars_files:
     - "./defaults/{{ env | default(main) }}.yml"
