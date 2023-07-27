@@ -1,0 +1,6 @@
+### custom/tasks/main.yml
+---
+- name: set the correct working environment
+  include_vars: "defaults/{{ env | default(main) }}.yml"
+
+# any customization goes here: the creation of a database for your application, a vhost of server block for your webserver &c
