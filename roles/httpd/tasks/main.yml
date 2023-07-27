@@ -1,1 +1,93 @@
+### httpd/tasks/main.yml
+---
+- name: set the correct Apache working environment
+  include_vars: "defaults/{{ env | default(main) }}.yml"
 
+- name: check if a Apache version exists
+  ansible.builtin.stat:
+    path: /usr/sbin/httpd
+  register: apache_version
+
+- name: install and configure a new Apache
+  block:
+    - name: install Apache packages
+      ansible.builtin.dnf:
+        name: "{{ item.package }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ httpd.packages }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: create the Apache config folder
+      ansible.builtin.file:
+        path: "{{ httpd.serverroot }}/conf/"
+        owner: "{{ httpd.owner }}"
+        group: "{{ httpd.group }}"
+        state: directory
+        mode: 0755
+
+    - name: remove default Apache config files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ httpd.serverroot }}/conf.d/autoindex.conf"
+        - "{{ httpd.serverroot }}/conf.d/fcgid.conf"
+        - "{{ httpd.serverroot }}/conf.d/userdir.conf"
+        - "{{ httpd.serverroot }}/conf.d/welcome.conf"
+
+  when: not apache_version.stat.exists
+
+- name: apply Apache global settings template
+  template:
+    src: httpd.conf.j2
+    dest: "{{ httpd.serverroot }}/conf/httpd.conf"
+    owner: "{{ httpd.owner }}"
+    group: "{{ httpd.group }}"
+    mode: 0644
+
+- name: install extra Apache templates in a loop into conf.d
+  template:
+    src: "{{ item }}"
+    dest: "{{ httpd.serverroot }}/conf.d/{{ item | basename | regex_replace('.j2', '') }}"
+    owner: "{{ httpd.owner }}"
+    group: "{{ httpd.group }}"
+    mode: 0644
+  with_fileglob:
+    - ../templates/conf.d/*.j2
+
+- name: secure by removing unwanted Apache modules
+  replace:
+    path: /etc/httpd/conf.modules.d/00-base.conf
+    regexp: '^(LoadModule {{ item }}.*)'
+    replace: '#\1'
+  with_items:
+    - autoindex_module
+    - userdir_module
+
+- name: remove unwanted old CGI module(s)
+  replace:
+    path: /etc/httpd/conf.modules.d/01-cgi.conf
+    regexp: '^(LoadModule {{ item }}.*)'
+    replace: '#\1'
+  with_items:
+    - cgi_module
+
+# bug/issue https://bugzilla.redhat.com/show_bug.cgi?id=275
+# httpd cannot find 'mime.type' unless copied explicitely
+- name: copy the missing "mime.types"
+  ansible.builtin.copy:
+    src: files/mime.types
+    dest: /etc/httpd/conf/mime.types
+    owner: "{{ httpd.owner }}"
+    group: "{{ httpd.group }}"
+    mode: 0644
+
+- name: ensure and restart the Apache service
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: yes
+  when: not ansible_check_mode
+  ignore_errors: '{{ ansible_check_mode }}'
