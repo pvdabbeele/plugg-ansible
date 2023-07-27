@@ -47,7 +47,14 @@
       ansible.builtin.include_role:
         name: "{{ scripting_language }}"
       when: (scripting_language is defined) and (scripting_language in scripting_languages)
+      
+    - name: include application server role(s) if desired
+      ansible.builtin.include_role:
+        name: "{{ application_server_type }}"
+      when: (application_server_type is defined) and (application_server_type in application_server_types)
+  
   vars:
+    application_server_types: [jboss]
     scripting_languages: [php]
     visible_logging_off: true
     webserver_types: [httpd, nginx]
