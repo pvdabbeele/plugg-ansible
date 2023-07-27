@@ -1,0 +1,120 @@
+### jboss/tasks/main.yml
+---
+- name: set the correct Jboss working environment
+  include_vars: "defaults/{{ env | default(main) }}.yml"
+
+- name: check if Jboss is present
+  shell: ps -ef | grep java | grep "jboss.server"
+  changed_when: false
+  failed_when: false
+  ignore_errors: true
+  register: jboss_java_processes
+
+- name: install and configure Jboss
+  block:
+    - name: install Jboss packages
+      ansible.builtin.dnf:
+        name: "{{ item.package }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ jboss.packages }}"
+      when: not ansible_check_mode
+      ignore_errors: '{{ ansible_check_mode }}'
+
+    - name: get entities from group
+      ansible.builtin.getent:
+        database: group
+
+    - name: ensure the Jboss group is created
+      ansible.builtin.group:
+        name: "{{ jboss.group }}"
+        state: present
+      when: "'jboss.group' not in ansible_facts.getent_group"
+
+    - name: create Jboss system user
+      ansible.builtin.user:
+        name: "{{ jboss.owner }}"
+        group: "{{ jboss.group }}"
+        create_home: no
+        shell: /bin/bash
+
+    - name: create the Jboss root folder
+      ansible.builtin.file:
+        path: /opt/jboss
+        owner: "{{ jboss.owner }}"
+        group: "{{ jboss.group }}"
+        state: directory
+        mode: 0755
+
+    - name: retrieve the correct Jboss Java version
+      shell: dirname $(dirname $(readlink -f $(which java)))
+      register: jboss_java_home
+
+    - name: adapt the Jboss systemd parameters JAVA_HOME locally
+      ansible.builtin.lineinfile:
+        backrefs: yes
+        dest: ./roles/jboss/templates/jboss_params.j2
+        line: '\1{{ jboss_java_home.stdout }}'
+        regexp: "^(.*)_default_Java_JRE_path(.*)$"
+        state: present
+      delegate_to: 127.0.0.1
+
+    - name: adapt the Jboss systemd parameters JAVA locally
+      ansible.builtin.lineinfile:
+        backrefs: yes
+        dest: ./roles/jboss/templates/jboss_params.j2
+        line: '\1{{ jboss_java_home.stdout }}/bin/java'
+        regexp: "^(.*)_default_Java_JRE_binary(.*)$"
+        state: present
+      delegate_to: 127.0.0.1
+
+    - name: download and unzip the requested Jboss version {{ jboss.version }}
+      ansible.builtin.unarchive:
+        src: "{{ jboss.repo_url }}"
+        dest: /opt/jboss
+        remote_src: yes
+
+    - name: renew permissions on Jboss root and subfolders
+      file:
+        dest: /opt/jboss
+        owner: "{{ jboss.owner }}"
+        group: "{{ jboss.group }}"
+        recurse: true
+
+  when: jboss_java_processes.rc == 0
+
+- name: copy the Jboss systemd service file
+  template:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item | regex_replace('.j2', '') }}"
+    group: "{{ jboss.group }}"
+    owner: "{{ jboss.owner }}"
+    mode: 0644
+  with_items:
+    - jboss.service.j2
+    - jboss_params.j2
+
+- name: revert locally to default JAVA_HOME for future usage
+  ansible.builtin.lineinfile:
+    dest: ./roles/jboss/templates/jboss_params.j2
+    regexp: "^(.*)JAVA_HOME=(.*)$"
+    line: 'JAVA_HOME=_default_Java_JRE_path'
+    state: present
+  delegate_to: 127.0.0.1
+
+- name: revert locally to default JAVA for future usage
+  ansible.builtin.lineinfile:
+    dest: ./roles/jboss/templates/jboss_params.j2
+    regexp: "^(.*)JAVA=(.*)$"
+    line: 'JAVA=_default_Java_JRE_binary'
+    state: present
+  delegate_to: 127.0.0.1
+
+- name: ensure and restart the Jboss service
+  ansible.builtin.service:
+    name: jboss
+    state: started
+    enabled: yes
+    daemon_reload: true
+  when: not ansible_check_mode
+  ignore_errors: '{{ ansible_check_mode }}'
