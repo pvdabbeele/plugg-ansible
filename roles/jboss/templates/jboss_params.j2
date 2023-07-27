@@ -1,0 +1,5 @@
+JAVA=_default_Java_JRE_binary
+JAVA_HOME=_default_Java_JRE_path
+JAVA_OPTS=-Xms{{ ansible_memtotal_mb // 2 }}m -Xmx{{ ansible_memtotal_mb }}m
+JBOSS_HOME=/opt/jboss/{{ jboss.version }}
+JBOSS_LOG_DIR=/opt/jboss/{{ jboss.version }}/standalone/log
