@@ -12,7 +12,13 @@ An Ansible repo with pluggable roles, such as:
 - Ansible 2.12 or higher
 - an Ansible service account with authorized ssh login
 - Vaultwarden 2023 or equivalent (with: community.general.bitwarden installed)
-
+- an inventory
+```yml
+[applications]
+my_app.local
+[databases]
+my_db.local
+```
 ## content
 - pluggable roles that can perform a **default** installation of aforementioned components
 - a customization role that performs a **specific** installation and/or configuration
