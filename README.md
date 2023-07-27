@@ -11,7 +11,7 @@ An Ansible repo with pluggable roles, such as:
 - RHEL 8
 - Ansible 2.12 or higher
 - an Ansible service account with authorized ssh login
-- Vaultwarden 2023 or equivalent
+- Vaultwarden 2023 or equivalent (with: community.general.bitwarden installed)
 
 ## content
 - pluggable roles that can perform a **default** installation of aforementioned components
