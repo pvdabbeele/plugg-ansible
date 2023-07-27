@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+# TYPE   DATABASE   USER   ADDRESS   METHOD
+# {% for client in postgresql.hba %}
+{{ client.type }}   {{ client.database }}   {{ client.user }}   {{ client.address|default('') }}   {{ client.auth_method }}   {{ client.ip_address|default('') }}   {{ client.ip_mask|default('') }}   {{ client.auth_options|default("") }}
+{% endfor %}
