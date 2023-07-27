@@ -1,0 +1,10 @@
+server {
+  index {{ nginx.index | default('index.html', true) }};
+  listen {{ nginx.port | default('88', true) }} default_server;
+  listen [::]:{{ nginx.port | default('88', true) }} default_server;
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+  root {{ nginx.documentroot | default('/var/www/html', true) }};
+  server_name {{ hostvars[groups['applications'][0]]['inventory_hostname'] }};
+}
