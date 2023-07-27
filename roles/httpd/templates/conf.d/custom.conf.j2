@@ -1,0 +1,7 @@
+<VirtualHost *:{{ httpd.port | default('80', true) }}>
+  DocumentRoot {{ httpd.documentroot | default('/var/www/html', true) }}
+  <IfModule dir_module>
+    DirectoryIndex index.html
+  </IfModule>
+  ServerName {{ hostvars[groups['applications'][0]]['inventory_hostname'] }}
+</VirtualHost>
