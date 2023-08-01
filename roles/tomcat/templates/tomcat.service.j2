@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Apache Tomcat
+After=syslog.target network.target
+
+[Service]
+EnvironmentFile=/etc/systemd/system/tomcat_params
+ExecStart=/opt/tomcat{{ tomcat.major }}/bin/startup.sh -security
+ExecStop=/bin/kill -15 $MAINPID
+Group={{ tomcat.group }}
+RestartSec=10
+Restart=always
+Type=forking
+UMask=0007
+User={{ tomcat.owner }}
+
+[Install]
+WantedBy=multi-user.target
