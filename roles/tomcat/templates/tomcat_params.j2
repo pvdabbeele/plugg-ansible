@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+CATALINA_BASE=/opt/tomcat{{ tomcat.major }}
+CATALINA_HOME=/opt/tomcat{{ tomcat.major }}
+CATALINA_PID=/opt/tomcat{{ tomcat.major }}/temp/tomcat.pid
+CATALINA_OPTS=-Xms{{ minimum_heapsize }}m -Xmx{{ maximum_heapsize }}m -server -XX:+UseParallelGC
+JAVA=/usr/lib/jvm/jre
+JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom
