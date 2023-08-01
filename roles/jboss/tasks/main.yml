@@ -94,6 +94,14 @@
     - jboss.service.j2
     - jboss_params.j2
 
+- name: copy the Jboss standalone xml template
+  template:
+    src: ./roles/jboss/templates/standalone.xml.j2
+    dest: "/opt/jboss/{{ jboss.version }}/standalone/configuration/standalone.xml"
+    group: "{{ jboss.group }}"
+    owner: "{{ jboss.owner }}"
+    mode: 0644
+
 - name: revert locally to default JAVA_HOME for future usage
   ansible.builtin.lineinfile:
     dest: ./roles/jboss/templates/jboss_params.j2
