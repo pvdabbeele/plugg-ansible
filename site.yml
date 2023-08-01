@@ -54,7 +54,7 @@
       when: (application_server_type is defined) and (application_server_type in application_server_types)
   
   vars:
-    application_server_types: [jboss]
+    application_server_types: [jboss, tomcat]
     scripting_languages: [php]
     visible_logging_off: true
     webserver_types: [httpd, nginx]
