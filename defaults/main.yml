@@ -17,6 +17,7 @@ httpd:
     - { user: 'apache', group: 'apache', shell: '/bin/bash' }
 jboss:
   group: jboss
+  http_port: 8088
   packages:
     - { package: 'java-11-openjdk', state: 'present' }
     - { package: 'unzip', state: 'latest' }
