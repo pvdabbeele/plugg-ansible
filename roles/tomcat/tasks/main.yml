@@ -1,0 +1,77 @@
+---
+- name: set the correct Tomcat working environment
+  include_vars: "defaults/{{ env | default(main) }}.yml"
+
+- name: check if Tomcat is installed
+  ansible.builtin.stat:
+    path: "/opt/tomcat{{ tomcat.major }}"
+  register: tomcat_presence
+
+- name: install and configure Tomcat
+  block:
+    - name: get entities from group
+      ansible.builtin.getent:
+        database: group
+
+    - name: ensure the Tomcat group is created
+      ansible.builtin.group:
+        name: "{{ tomcat.group }}"
+        state: present
+      when: "'tomcat.group' not in ansible_facts.getent_group"
+
+    - name: create Tomcat system user
+      ansible.builtin.user:
+        name: "{{ tomcat.owner }}"
+        group: "{{ tomcat.group }}"
+        home: "/opt/tomcat-{{ tomcat.major }}"
+        create_home: no
+        shell: /bin/bash
+
+    - name: install the Tomcat dependency packages
+      ansible.builtin.dnf:
+        name: "{{ item.package }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ tomcat.packages }}"
+
+    - name: get the Tomcat tarball
+      ansible.builtin.get_url:
+        url: "{{ tomcat.repo_url }}/tomcat-{{ tomcat.major }}/v{{ tomcat.major }}.{{ tomcat.minor }}/bin/apache-tomcat-{{ tomcat.major }}.{{ tomcat.minor }}.tar.gz"
+        dest: "/var/tmp/apache-tomcat-{{ tomcat.major }}.{{ tomcat.minor }}.tar.gz"
+
+    - name: extract the Tomcat tarball
+      ansible.builtin.unarchive:
+        remote_src: yes
+        src: "/var/tmp/apache-tomcat-{{ tomcat.major }}.{{ tomcat.minor }}.tar.gz"
+        dest: /opt/
+        owner: "{{ tomcat.owner }}"
+        group: "{{ tomcat.group }}"
+
+    - name: create a symbolic link to the 'major'
+      file:
+        src: "/opt/apache-tomcat-{{ tomcat.major }}.{{ tomcat.minor }}"
+        dest: "/opt/tomcat{{ tomcat.major }}"
+        state: link
+
+  when: not tomcat_presence.stat.exists
+
+- name: copy the Tomcat systemd service file
+  template:
+    src: "templates/{{ item }}"
+    dest: "/etc/systemd/system/{{ item | regex_replace('.j2', '') }}"
+    group: "{{ jboss.group }}"
+    owner: "{{ jboss.owner }}"
+    mode: 0644
+  vars:
+    minimum_heapsize: "{{ (ansible_memory_mb.real.total*0.4) | int }}"
+    maximum_heapsize: "{{ (ansible_memory_mb.real.total*0.8) | int }}"
+  with_items:
+    - tomcat.service.j2
+    - tomcat_params.j2
+
+- name: enable and start Tomcat
+  ansible.builtin.service:
+    name: tomcat.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
