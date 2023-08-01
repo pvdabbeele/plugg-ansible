@@ -95,4 +95,14 @@ postgresql:
   users:
     - { user: 'admin', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', privs: 'ALL', type: 'database', objs: '' }
     - { user: 'readonly', group: 'users', shell: '/bin/bash', password: 'CHANGEME!', privs: 'SELECT', type: 'default_privs', objs: 'TABLES' }
+tomcat:
+  group: tomcat
+  major: '10'
+  minor: '1.11'
+  owner: tomcat
+  packages:
+    - { package: 'java-11-openjdk', state: 'present' }
+    - { package: 'java-11-openjdk-devel', state: 'present' }
+    - { package: 'java-11-openjdk-headless', state: 'present' }
+  repo_url: https://dlcdn.apache.org/tomcat/
 
